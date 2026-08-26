@@ -1,9 +1,8 @@
 name: Development Build
 
 on:
-  push:
-    branches:
-      - master
+  schedule:
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -14,9 +13,11 @@ jobs:
     name: Build development jar
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout upstream master
         uses: actions/checkout@v4
         with:
+          repository: PlayPro/CoreProtect
+          ref: master
           fetch-depth: 0
 
       - name: Set up JDK 25
@@ -33,6 +34,7 @@ jobs:
         id: vars
         run: |
           echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "sha_full=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           JAR_PATH=$(find target -maxdepth 1 -name '*.jar' ! -name 'original-*.jar' | head -n 1)
           echo "jar_path=$JAR_PATH" >> "$GITHUB_OUTPUT"
           echo "jar_name=$(basename "$JAR_PATH")" >> "$GITHUB_OUTPUT"
@@ -50,9 +52,10 @@ jobs:
           tag_name: dev-latest
           name: Latest development build (${{ steps.vars.outputs.sha_short }})
           prerelease: true
-          target_commitish: ${{ github.sha }}
           body: |
-            Automated development build from commit ${{ github.sha }}.
+            Automated build of PlayPro/CoreProtect@master, commit ${{ steps.vars.outputs.sha_full }}.
+
+            This tracks the public upstream repository on a schedule (every 6 hours) plus manual runs. It is not the same as the early-access builds available to Patreon supporters on coreprotect.net, which are built from unreleased source not present in this public repository.
 
             This is an unreleased development build, not an official CoreProtect release. Use at your own risk.
           files: ${{ steps.vars.outputs.jar_path }}
