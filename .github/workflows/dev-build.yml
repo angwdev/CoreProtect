@@ -28,7 +28,7 @@ jobs:
           cache: 'maven'
 
       - name: Build with Maven
-        run: mvn -B package
+        run: mvn -B package -Dproject.branch=development
 
       - name: Determine build metadata
         id: vars
