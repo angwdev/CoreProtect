@@ -39,19 +39,34 @@ jobs:
           echo "jar_path=$JAR_PATH" >> "$GITHUB_OUTPUT"
           echo "jar_name=$(basename "$JAR_PATH")" >> "$GITHUB_OUTPUT"
 
+      - name: Skip if this commit was already published
+        id: check
+        run: |
+          if gh release view "dev-${{ steps.vars.outputs.sha_short }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+
       - name: Upload build artifact
+        if: steps.check.outputs.skip == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.vars.outputs.jar_name }}
           path: ${{ steps.vars.outputs.jar_path }}
           retention-days: 30
 
-      - name: Publish latest development build
+      - name: Publish development build release
+        if: steps.check.outputs.skip == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: dev-latest
-          name: Latest development build (${{ steps.vars.outputs.sha_short }})
+          tag_name: dev-${{ steps.vars.outputs.sha_short }}
+          name: Development build ${{ steps.vars.outputs.sha_short }}
           prerelease: true
+          make_latest: true
           body: |
             Automated build of PlayPro/CoreProtect@master, commit ${{ steps.vars.outputs.sha_full }}.
 
@@ -61,3 +76,14 @@ jobs:
           files: ${{ steps.vars.outputs.jar_path }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prune old development releases
+        if: steps.check.outputs.skip == 'false'
+        continue-on-error: true
+        run: |
+          gh release list --limit 100 --json tagName --jq '.[] | select(.tagName | startswith("dev-")) | .tagName' \
+            | tail -n +6 \
+            | xargs -r -n1 -I{} gh release delete {} --yes --cleanup-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
