@@ -59,3 +59,5 @@ jobs:
 
             This is an unreleased development build, not an official CoreProtect release. Use at your own risk.
           files: ${{ steps.vars.outputs.jar_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
