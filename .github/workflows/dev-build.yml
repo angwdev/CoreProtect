@@ -1,23 +1,25 @@
 name: Development Build
 
 on:
-  schedule:
-    - cron: '0 */6 * * *'
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
 permissions:
   contents: write
+
+env:
+  PLUGIN_VERSION: '25.0'
 
 jobs:
   build:
     name: Build development jar
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout upstream master
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          repository: PlayPro/CoreProtect
-          ref: master
           fetch-depth: 0
 
       - name: Set up JDK 25
@@ -26,6 +28,9 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
+
+      - name: Set plugin version
+        run: mvn -B -q versions:set -DnewVersion="$PLUGIN_VERSION" -DgenerateBackupPoms=false
 
       - name: Build with Maven
         run: mvn -B package -Dproject.branch=development
@@ -68,9 +73,9 @@ jobs:
           prerelease: true
           make_latest: true
           body: |
-            Automated build of PlayPro/CoreProtect@master, commit ${{ steps.vars.outputs.sha_full }}.
+            Automated build of ${{ github.repository }}@master, commit ${{ steps.vars.outputs.sha_full }}.
 
-            This tracks the public upstream repository on a schedule (every 6 hours) plus manual runs. It is not the same as the early-access builds available to Patreon supporters on coreprotect.net, which are built from unreleased source not present in this public repository.
+            This is built whenever new commits land on master, plus manual runs. It is not the same as the early-access builds available to Patreon supporters on coreprotect.net, which are built from unreleased source not present in this public repository.
 
             This is an unreleased development build, not an official CoreProtect release. Use at your own risk.
           files: ${{ steps.vars.outputs.jar_path }}
