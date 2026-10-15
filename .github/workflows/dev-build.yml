@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 env:
-  PLUGIN_VERSION: '25.0'
+  PLUGIN_VERSION: '25.1'
 
 jobs:
   build:
